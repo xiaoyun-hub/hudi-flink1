@@ -4,6 +4,7 @@ import org.apache.flink.contrib.streaming.state.PredefinedOptions;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
@@ -18,22 +19,31 @@ import static org.apache.flink.table.api.Expressions.$;
 public class FlinkSQLHudiDemo {
 
 	public static void main(String[] args) {
+		System.setProperty("HADOOP_USER_NAME","root");
+//		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+//
+//		// 设置状态后端RocksDB
+//		EmbeddedRocksDBStateBackend embeddedRocksDBStateBackend = new EmbeddedRocksDBStateBackend(true);
+//		embeddedRocksDBStateBackend.setPredefinedOptions(PredefinedOptions.SPINNING_DISK_OPTIMIZED_HIGH_MEM);
+//		env.setStateBackend(embeddedRocksDBStateBackend);
+//
+//		// checkpoint配置
+//		env.enableCheckpointing(TimeUnit.SECONDS.toMillis(30), CheckpointingMode.EXACTLY_ONCE);
+//		CheckpointConfig checkpointConfig = env.getCheckpointConfig();
+//		checkpointConfig.setCheckpointStorage("hdfs://s201:8020/ckps");
+//		checkpointConfig.setMinPauseBetweenCheckpoints(TimeUnit.SECONDS.toMillis(20));
+//		checkpointConfig.setTolerableCheckpointFailureNumber(5);
+//		checkpointConfig.setCheckpointTimeout(TimeUnit.MINUTES.toMillis(1));
+//		checkpointConfig.setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+//		StreamTableEnvironment sTableEnv = StreamTableEnvironment.create(env);
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-		// 设置状态后端RocksDB
-		EmbeddedRocksDBStateBackend embeddedRocksDBStateBackend = new EmbeddedRocksDBStateBackend(true);
-		embeddedRocksDBStateBackend.setPredefinedOptions(PredefinedOptions.SPINNING_DISK_OPTIMIZED_HIGH_MEM);
-		env.setStateBackend(embeddedRocksDBStateBackend);
-
-		// checkpoint配置
-		env.enableCheckpointing(TimeUnit.SECONDS.toMillis(30), CheckpointingMode.EXACTLY_ONCE);
-		CheckpointConfig checkpointConfig = env.getCheckpointConfig();
-		checkpointConfig.setCheckpointStorage("hdfs://s201:8020/ckps");
-		checkpointConfig.setMinPauseBetweenCheckpoints(TimeUnit.SECONDS.toMillis(20));
-		checkpointConfig.setTolerableCheckpointFailureNumber(5);
-		checkpointConfig.setCheckpointTimeout(TimeUnit.MINUTES.toMillis(1));
-		checkpointConfig.setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
-		StreamTableEnvironment sTableEnv = StreamTableEnvironment.create(env);
+		env.setParallelism(1);
+		env.enableCheckpointing(5000);
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.inStreamingMode()
+				.build();
+		StreamTableEnvironment sTableEnv = StreamTableEnvironment.create(env, settings) ;
 
 		// 2-创建输入表，TODO：从Kafka消费数据
 		sTableEnv.executeSql(
@@ -84,7 +94,7 @@ public class FlinkSQLHudiDemo {
 				"PARTITIONED BY (partition_day)\n" +
 				"WITH (\n" +
 				"    'connector' = 'hudi',\n" +
-				"    'path' = '/hudi-warehouse/flink_hudi_order',\n" +
+				"    'path' = 'hdfs://s201:8020/hudi-warehouse/flink_hudi_order',\n" +
 				"    'table.type' = 'MERGE_ON_READ',\n" +
 				"    'write.operation' = 'upsert',\n" +
 				"    'hoodie.datasource.write.recordkey.field'= 'orderId',\n" +
