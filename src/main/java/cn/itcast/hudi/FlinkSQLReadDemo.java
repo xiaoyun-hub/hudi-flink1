@@ -31,7 +31,7 @@ public class FlinkSQLReadDemo {
 				"PARTITIONED BY (partition_day)\n" +
 				"WITH (\n" +
 				"    'connector' = 'hudi',\n" +
-				"    'path' = 'file:///D:/flink_hudi_order',\n" +
+				"    'path' = 'hdfs://s201:8020/hudi-warehouse/flink_hudi_order',\n" +
 				"    'table.type' = 'MERGE_ON_READ',\n" +
 				"    'read.streaming.enabled' = 'true',\n" +
 				"    'read.streaming.check-interval' = '4'\n" +
